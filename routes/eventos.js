@@ -137,4 +137,36 @@ router.put('/entradas/:idEvento/:tipoEntrada/:cantidad', async (req, res) => {
     }
 });
 
+router.get('/agotados', async (req, res) => {
+    try{
+        let resultado = await Evento.find(e => e.entradas.every(entrada => entrada.disponibles === 0)).populate('recinto');
+        res.status(200).json({ resultado, ok: true });
+    }
+    catch (error) {
+        res.status(404).json({ error: `Error obteniendo eventos agotados`, ok: false });
+    }
+});
+
+router.post('/entradas/:idEvento', async (req, res) => {
+    try{
+        let nuevos_datos = new Evento(req.body);
+        let evento = await Evento.findById(req.params.idEvento);
+        let entradas = nuevos_datos.entradas;
+
+        if (entradas.tipo == null || entradas.tipo === "" || entradas.precio == null || entradas.precio === "" || entradas.disponibles == null || entradas.disponibles === "") {
+            return res.status(400).json({ error: `Error: Datos inválidos para el evento ${req.params.idEvento}`, ok: false });
+        }
+
+        evento.entradas.tipo = entradas.tipo;
+        evento.entradas.precio = entradas.precio;
+        evento.entradas.disponibles = entradas.disponibles;
+
+        let resultado = await evento.save();
+        res.status(201).json({ resultado, ok: true });
+    }
+    catch (error) {
+        res.status(500).json({ error: `Error añadiendo entradas al evento ${req.params.idEvento}`, ok: false });
+    }
+});
+
 module.exports = router;
